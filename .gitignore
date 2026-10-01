@@ -1,0 +1,12 @@
+# Données générées par Spanza
+*.db
+telechargements/
+
+# Python
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+*.pem
+*.key
