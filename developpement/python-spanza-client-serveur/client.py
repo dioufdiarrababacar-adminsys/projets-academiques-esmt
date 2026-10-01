@@ -4,51 +4,33 @@
 #Yaye Aby SOW
 #Mouhameth WADE
 
+"""Client Spanza (version corrigée après revue de sécurité).
 
+Changements par rapport à la version rendue :
+  - connexion chiffrée en TLS, avec vérification du certificat du serveur
+  - adresse et port du serveur en paramètres (plus d'IP codée en dur)
+  - le nom du fichier téléchargé ne vient plus tel quel de l'intitulé choisi par un autre
+    abonné : un intitulé comme '../../x' ne peut plus écrire hors du dossier telechargements
+  - extension du fichier fournie par le serveur, contenu base64 validé
+  - taille du fichier contrôlée avant de le lire en mémoire
+"""
+
+import argparse
 import base64
-import os
+import binascii
 import getpass
-from json import dumps, loads
+import os
+import re
+import ssl
 from socket import AF_INET, SOCK_STREAM, socket
 
-HOTE = "192.168.1.18"   # Adresse IP du serveur
-PORT = 5000
+from protocole import TAILLE_MAX_MESSAGE, TAILLE_MAX_VIDEO_MO, envoyer, recevoir
+
+EXTENSIONS_OK = {".mp4", ".mkv", ".avi", ".mov", ".webm"}
+DOSSIER_TELECHARGEMENTS = "telechargements"
 
 # Cookie de session (reçu après connexion)
 mon_cookie = None
-
-
-# ── Protocole de communication (longueur préfixée) ──────────────────────────
-# Miroir exact du protocole côté serveur : 4 octets big-endian + payload JSON.
-
-def envoyer(sock, dico: dict):
-    """Sérialise dico en JSON et l'envoie avec un préfixe de longueur 4 octets."""
-    data = dumps(dico, ensure_ascii=False).encode("utf-8")
-    longueur = len(data).to_bytes(4, "big")
-    sock.sendall(longueur + data)
-
-
-def recevoir(sock) -> dict:
-    """Reçoit un message préfixé par sa longueur et le désérialise."""
-    # Lire exactement 4 octets pour la longueur
-    entete = b""
-    while len(entete) < 4:
-        chunk = sock.recv(4 - len(entete))
-        if not chunk:
-            raise ConnectionError("Le serveur a fermé la connexion.")
-        entete += chunk
-
-    longueur = int.from_bytes(entete, "big")
-
-    # Lire exactement longueur octets
-    data = b""
-    while len(data) < longueur:
-        chunk = sock.recv(min(65536, longueur - len(data)))
-        if not chunk:
-            raise ConnectionError("Connexion perdue pendant la réception.")
-        data += chunk
-
-    return loads(data.decode("utf-8"))
 
 
 def afficher_message_serveur(rep: dict):
@@ -56,6 +38,13 @@ def afficher_message_serveur(rep: dict):
     texte = rep.get("__texte__") or rep.get("message", "")
     if texte:
         print(">>", texte)
+
+
+def nom_fichier_sur(intitule, id_video, extension) -> str:
+    """Construit un nom de fichier sûr : uniquement [A-Za-z0-9._-], jamais de séparateur de chemin."""
+    base = re.sub(r"[^A-Za-z0-9._-]+", "_", str(intitule)).strip("._")[:80] or "video"
+    ext = extension if extension in EXTENSIONS_OK else ".mp4"
+    return f"{int(id_video)}_{base}{ext}"
 
 
 # ── CHOIX INSCRIPTION / CONNEXION ────────────────────────────────────────────
@@ -75,29 +64,19 @@ def choisir_mode(sock) -> str:
 
 # ── INSCRIPTION ──────────────────────────────────────────────────────────────
 
-def inscription(sock):
-    rep = recevoir(sock)
-    afficher_message_serveur(rep)
+def inscription(sock) -> bool:
+    afficher_message_serveur(recevoir(sock))
 
     nom      = input("Nom      : ")
     prenom   = input("Prénom   : ")
     username = input("Username : ")
-    password = getpass.getpass("Password : ")
+    password = getpass.getpass("Password (8 caractères minimum) : ")
 
-    envoyer(sock, {
-        "nom"     : nom,
-        "prenom"  : prenom,
-        "username": username,
-        "password": password,
-    })
+    envoyer(sock, {"nom": nom, "prenom": prenom, "username": username, "password": password})
 
     rep = recevoir(sock)
     afficher_message_serveur(rep)
-
-    # Si le username est déjà pris, le serveur envoie une erreur et ferme
-    if "ERREUR" in rep.get("__texte__", ""):
-        return False
-    return True
+    return "ERREUR" not in rep.get("__texte__", "")
 
 
 # ── CONNEXION (reçoit le cookie) ─────────────────────────────────────────────
@@ -105,19 +84,17 @@ def inscription(sock):
 def connexion(sock) -> bool:
     global mon_cookie
 
-    rep = recevoir(sock)
-    afficher_message_serveur(rep)
+    afficher_message_serveur(recevoir(sock))
 
     username = input("Username : ")
     password = getpass.getpass("Password : ")
-
     envoyer(sock, {"username": username, "password": password})
 
     rep = recevoir(sock)
     cookie_recu = rep.get("cookie")
 
-    if cookie_recu == "Bad password" or cookie_recu is None:
-        print(">> Mauvais identifiant ou mot de passe. Connexion refusée.")
+    if not isinstance(cookie_recu, str) or cookie_recu == "Bad password":
+        print(">>", rep.get("message") or "Mauvais identifiant ou mot de passe. Connexion refusée.")
         return False
 
     mon_cookie = cookie_recu
@@ -129,7 +106,7 @@ def connexion(sock) -> bool:
 
 def liste_videos(sock):
     envoyer(sock, {"cookie": mon_cookie, "commande": "liste_videos"})
-    rep = recevoir(sock)
+    rep = recevoir(sock, TAILLE_MAX_MESSAGE)
 
     if rep.get("statut") != "ok":
         print(">> Erreur :", rep.get("message"))
@@ -154,43 +131,41 @@ def telecharger(sock):
         print("ID invalide.")
         return
 
-    envoyer(sock, {
-        "cookie"  : mon_cookie,
-        "commande": "telecharger",
-        "id_video": int(id_video),
-    })
-
-    rep = recevoir(sock)
+    envoyer(sock, {"cookie": mon_cookie, "commande": "telecharger", "id_video": int(id_video)})
+    rep = recevoir(sock, TAILLE_MAX_MESSAGE)
 
     if rep.get("statut") != "ok":
         print(">> Erreur :", rep.get("message"))
         return
 
-    contenu_b64 = rep.get("contenu_b64", "")
-    if contenu_b64:
-        os.makedirs("telechargements", exist_ok=True)
-        nom_fichier = os.path.join(
-            "telechargements",
-            rep["intitule"].replace(" ", "_") + ".mp4",
-        )
-        with open(nom_fichier, "wb") as f:
-            f.write(base64.b64decode(contenu_b64))
-        print(f">> Vidéo enregistrée : {nom_fichier} ({rep['taille_mo']} Mo)")
-    else:
-        print(f">> Téléchargement autorisé ({rep['taille_mo']} Mo) — pas de contenu binaire.")
+    try:
+        contenu = base64.b64decode(rep.get("contenu_b64", ""), validate=True)
+    except (binascii.Error, ValueError):
+        print(">> Erreur : contenu reçu illisible.")
+        return
+
+    os.makedirs(DOSSIER_TELECHARGEMENTS, exist_ok=True)
+    chemin = os.path.join(DOSSIER_TELECHARGEMENTS,
+                          nom_fichier_sur(rep.get("intitule", ""), rep.get("id_video", id_video),
+                                          rep.get("extension", ".mp4")))
+    with open(chemin, "wb") as f:
+        f.write(contenu)
+    print(f">> Vidéo enregistrée : {chemin} ({rep.get('taille_mo')} Mo)")
 
 
 # ── TÉLÉVERSER ───────────────────────────────────────────────────────────────
 
 def televerser(sock):
     chemin = input("Chemin du fichier vidéo : ").strip()
-    if not os.path.exists(chemin):
+    if not os.path.isfile(chemin):
         print("Fichier introuvable.")
+        return
+    if os.path.getsize(chemin) > TAILLE_MAX_VIDEO_MO * 1024 * 1024:
+        print(f"Fichier trop grand (maximum {TAILLE_MAX_VIDEO_MO} Mo).")
         return
 
     intitule    = input("Intitulé    : ")
     description = input("Description : ")
-    nom_fichier = os.path.basename(chemin)
 
     print("Lecture et encodage en cours...")
     with open(chemin, "rb") as f:
@@ -200,13 +175,13 @@ def televerser(sock):
     envoyer(sock, {
         "cookie"     : mon_cookie,
         "commande"   : "televerser",
-        "nom_fichier": nom_fichier,
+        "nom_fichier": os.path.basename(chemin),
         "intitule"   : intitule,
         "description": description,
         "contenu_b64": contenu_b64,
     })
 
-    rep = recevoir(sock)
+    rep = recevoir(sock, TAILLE_MAX_MESSAGE)
     print(">>", rep.get("message"))
     if rep.get("nouveau_groupe"):
         print(f"   Votre groupe : {rep['nouveau_groupe']}")
@@ -216,71 +191,80 @@ def televerser(sock):
 
 def quitter(sock):
     envoyer(sock, {"cookie": mon_cookie, "commande": "quitter"})
-    rep = recevoir(sock)
-    print(">>", rep.get("message"))
+    print(">>", recevoir(sock).get("message"))
 
 
 # ── PROGRAMME PRINCIPAL ──────────────────────────────────────────────────────
 
-def main():
-    global mon_cookie
+def lire_arguments():
+    p = argparse.ArgumentParser(description="Client Spanza")
+    p.add_argument("--hote", default=os.environ.get("SPANZA_HOTE", "127.0.0.1"), help="adresse du serveur")
+    p.add_argument("--port", type=int, default=int(os.environ.get("SPANZA_PORT", "5000")))
+    p.add_argument("--ca", default=os.environ.get("SPANZA_CA"),
+                   help="certificat du serveur (ou de son autorité) à utiliser pour vérifier la connexion TLS")
+    p.add_argument("--sans-tls", action="store_true",
+                   help="connexion en clair (laboratoire uniquement, le serveur doit l'autoriser)")
+    return p.parse_args()
 
+
+def ouvrir_connexion(args):
     sock = socket(AF_INET, SOCK_STREAM)
+    sock.connect((args.hote, args.port))
+    if args.sans_tls:
+        print("[!] Connexion NON chiffrée : mots de passe et vidéos circulent en clair.")
+        return sock
+    contexte = ssl.create_default_context(cafile=args.ca)   # vérifie le certificat et le nom d'hôte
+    return contexte.wrap_socket(sock, server_hostname=args.hote)
+
+
+def menu(sock):
+    while True:
+        print("\n*************************************")
+        print("      🎥 VIDEOTHEQUE SPANZA - MENU      ")
+        print("========================================")
+        print(f" Connecté (session : {mon_cookie[:8]}...)")
+        print("----------------------------------------")
+        print("1. Consulter le catalogue des vidéos")
+        print("2. Télécharger une vidéo")
+        print("3. Téléverser une vidéo")
+        print("4. Quitter l'application")
+        print("========================================")
+        choix = input("Votre choix : ").strip()
+
+        if choix == "1":
+            liste_videos(sock)
+        elif choix == "2":
+            telecharger(sock)
+        elif choix == "3":
+            televerser(sock)
+        elif choix == "4":
+            quitter(sock)
+            break
+        else:
+            print("Choix invalide.")
+
+
+def main():
+    args = lire_arguments()
     try:
-        sock.connect((HOTE, PORT))
+        sock = ouvrir_connexion(args)
     except ConnectionRefusedError:
-        print(f"Impossible de se connecter à {HOTE}:{PORT}")
+        print(f"Impossible de se connecter à {args.hote}:{args.port}")
         print("Vérifiez que le serveur est bien lancé.")
+        return
+    except ssl.SSLError as e:
+        print(f"Connexion TLS refusée : {e}")
+        print("Vérifiez --ca (certificat du serveur) et que l'adresse correspond à celle du certificat.")
         return
 
     print("Connecté au serveur Spanza !")
-
     try:
-        # ── Étape 1 : Inscription ou connexion ──
         mode = choisir_mode(sock)
-
-        if mode == "inscription":
-            ok = inscription(sock)
-            if not ok:
-                return
-            # Après inscription, le serveur attend maintenant la connexion
-            # (il envoie le prompt d'authentification)
-
-        # ── Étape 2 : Authentification ──
-        connecte = connexion(sock)
-        if not connecte:
+        if mode == "inscription" and not inscription(sock):
             return
-        # ── Étape 3 : Menu principal ──
-
-        while True:
-            print("\n*************************************")
-            print("      🎥 VIDEOTHEQUE SPANZA - MENU      ")
-            print("========================================")
-            if mon_cookie:
-                print(f" Connecté (session : {mon_cookie[:8]}...)")
-            else:
-                print(" Aucun utilisateur connecté actuellement.")
-            print("----------------------------------------")
-            print("1. Consulter le catalogue des vidéos")
-            print("2. Télécharger une vidéo")
-            print("3. Téléverser une vidéo")
-            print("4. Quitter l'application")
-            print("========================================")
-            choix = input("Votre choix : ").strip()
-
-            if choix == "1":
-                liste_videos(sock)
-            elif choix == "2":
-                telecharger(sock)
-            elif choix == "3":
-                televerser(sock)
-            elif choix == "4":
-                quitter(sock)
-                break
-            else:
-                print("Choix invalide.")
-
-
+        if not connexion(sock):
+            return
+        menu(sock)
     except ConnectionError as e:
         print(f"\n[!] Connexion perdue : {e}")
     finally:
