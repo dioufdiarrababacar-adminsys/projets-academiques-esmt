@@ -10,3 +10,6 @@ __pycache__/
 .env
 *.pem
 *.key
+
+# Configuration locale (identifiants MySQL)
+config.properties
