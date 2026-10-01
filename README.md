@@ -25,6 +25,8 @@ La plupart de ces projets sont des travaux de groupe. Chaque README indique ma c
 
 Ce sont des projets pédagogiques menés sur des environnements de laboratoire (machines virtuelles). Les identifiants qui apparaissent dans les rapports sont des valeurs de démonstration.
 
+Les rapports sont publiés tels que rendus. Quand le code présentait des failles, une version corrigée est fournie à côté, avec un tableau « ce qui a changé » et des tests dans le README du projet. Ces corrections ont été réalisées avec l'aide d'un assistant IA (Claude) lors d'une revue de sécurité.
+
 Pour mes labs de sécurité hors cadre scolaire, voir [writeups-cybersecurite](https://github.com/dioufdiarrababacar-adminsys/writeups-cybersecurite).
 
 ## Contact
