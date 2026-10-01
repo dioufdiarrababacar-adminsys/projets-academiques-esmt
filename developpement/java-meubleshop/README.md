@@ -25,8 +25,17 @@
 ## Contenu
 
 - [`rapport.pdf`](rapport.pdf) : présentation de l'application, extraits de code commentés, déploiement.
+- [`meuble.sql`](meuble.sql) : création de la base `meuble` (tables, jeu de données de démonstration, vue `vue_ventes`).
+- [`config.properties.example`](config.properties.example) : modèle du fichier de configuration de la connexion MySQL.
 
 Le code source complet n'est pas dans ce dépôt, seuls des extraits figurent dans le rapport.
+
+## Installation
+
+1. Démarrer MySQL ou MariaDB (XAMPP, WampServer).
+2. Importer `meuble.sql` (phpMyAdmin, ou `mysql < meuble.sql`).
+3. Copier `config.properties.example` en `config.properties` à côté du JAR et renseigner l'utilisateur et le mot de passe MySQL.
+4. Placer le pilote MySQL Connector/J dans `lib/`, puis lancer `java -jar Meuble.jar`.
 
 ## Limites connues
 
