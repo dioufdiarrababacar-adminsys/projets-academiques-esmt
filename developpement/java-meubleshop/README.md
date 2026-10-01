@@ -37,7 +37,10 @@ Le code source complet n'est pas dans ce dépôt, seuls des extraits figurent da
 3. Copier `config.properties.example` en `config.properties` à côté du JAR et renseigner l'utilisateur et le mot de passe MySQL.
 4. Placer le pilote MySQL Connector/J dans `lib/`, puis lancer `java -jar Meuble.jar`.
 
-## Limites connues
+## Limites connues (non corrigées : le code source n'est pas disponible)
+
+Seuls le JAR compilé (non publié dans ce dépôt) et le rapport sont disponibles, donc rien n'a pu être corrigé dans le code. Ce qu'il faudrait changer dans les sources :
 
 - Les mots de passe sont hachés en SHA-256 sans sel. Pour un usage réel, il faudrait un algorithme dédié (bcrypt ou Argon2).
+- L'URL JDBC est écrite en dur avec `useSSL=false` et `allowPublicKeyRetrieval=true` : la liaison avec la base n'est pas chiffrée. Acceptable en local, pas sur un réseau.
 - Les comptes de démonstration (admin, vendeur, caisse) sont documentés dans le rapport et ne doivent pas être conservés en production.

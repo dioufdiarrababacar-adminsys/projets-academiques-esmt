@@ -13,3 +13,6 @@ __pycache__/
 
 # Configuration locale (identifiants MySQL)
 config.properties
+
+# Configuration des projets PHP (identifiants, jeton)
+config.ini
