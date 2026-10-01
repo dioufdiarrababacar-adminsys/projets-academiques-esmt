@@ -3,7 +3,7 @@
 > Serveur et client TCP en Python pour une vidéothèque en ligne : inscription, connexion, catalogue, téléchargement et téléversement de vidéos, avec deux niveaux d'abonnement.
 
 **Cadre :** Programmation réseau, Master 1 SSI, ESMT. Projet de groupe.
-**Ma contribution :** _à compléter_
+**Ma contribution :** le serveur.
 
 ## Fonctionnement
 
