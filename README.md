@@ -10,6 +10,7 @@ Chaque dossier contient le rapport remis (PDF), le code quand il existe, et un R
 
 | Domaine | Projet | Stack |
 |---------|--------|-------|
+| Réseaux et télécoms | [Automatisation d'administration Linux avec Paramiko](reseaux-telecoms/automatisation-ssh-paramiko/) | Python, Paramiko, SSH, SFTP |
 | Réseaux et télécoms | [Vote téléphonique avec Asterisk](reseaux-telecoms/voip-asterisk-vote-telephonique/) | Asterisk, PJSIP, PHP, MySQL, Chart.js |
 | Développement | [MeubleShop, gestion de vente de meubles](developpement/java-meubleshop/) | Java, Swing, JDBC, MySQL |
 | Développement | [Spanza, vidéothèque client/serveur](developpement/python-spanza-client-serveur/) | Python, sockets TCP, peewee, SQLite |
