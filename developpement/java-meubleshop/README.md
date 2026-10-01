@@ -3,7 +3,7 @@
 > Application de bureau Java de gestion de vente de meubles : catalogue, clients, caisse, historique des ventes et gestion des utilisateurs.
 
 **Cadre :** Programmation orientée objet (Java), Master 1 SSI, ESMT, année académique 2025-2026. Projet de groupe.
-**Ma contribution :** _à compléter_
+**Ma contribution :** la base de données (schéma, jeu de données) et l'interface Swing.
 
 ## Fonctionnalités
 

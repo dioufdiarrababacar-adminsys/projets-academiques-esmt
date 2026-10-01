@@ -3,7 +3,7 @@
 > Centre d'appel IVR qui permet de voter par téléphone (touches DTMF) pour l'un des deux lutteurs d'un combat de lutte traditionnelle, avec affichage des résultats en direct sur une page web.
 
 **Cadre :** Services Réseaux, année scolaire 2024-2025, ESMT. Projet de groupe.
-**Ma contribution :** _à compléter_
+**Ma contribution :** le site web d'affichage des résultats (page PHP, graphique Chart.js).
 
 ## Fonctionnement
 
