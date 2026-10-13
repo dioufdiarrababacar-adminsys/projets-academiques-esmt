@@ -6,13 +6,15 @@
 
 ## Contenu
 
-- [`rapport.pdf`](rapport.pdf) : le rapport rendu, avec les requêtes SQL pour
+Le TP consiste à écrire les requêtes SQL pour :
+
   - créer un tablespace de 80 Mo à extension automatique
   - définir un profil de mots de passe (tentatives, verrouillage, durée de vie, réutilisation)
   - créer un utilisateur avec mot de passe expiré, quota et profil
   - accorder et retirer des privilèges, créer un rôle et l'attribuer
   - exporter un schéma
-- [`corriges.sql`](corriges.sql) : les mêmes réponses après relecture, à tester avant usage
+
+Les réponses sont dans [`corriges.sql`](corriges.sql), à tester avant usage.
 
 ## Points corrigés
 

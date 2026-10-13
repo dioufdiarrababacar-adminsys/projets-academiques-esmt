@@ -24,7 +24,6 @@
 
 ## Contenu
 
-- [`rapport.pdf`](rapport.pdf) : présentation, extraits de code commentés, déploiement
 - [`meuble.sql`](meuble.sql) : création de la base `meuble` avec un jeu de données de démonstration
 - [`config.properties.example`](config.properties.example) : modèle de la configuration MySQL
 

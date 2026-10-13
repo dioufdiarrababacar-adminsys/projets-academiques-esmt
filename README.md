@@ -11,13 +11,13 @@
 | Développement | [MeubleShop, gestion de vente de meubles](developpement/java-meubleshop/) | Java, Swing, JDBC, MySQL |
 | Développement | [Spanza, vidéothèque client/serveur](developpement/python-spanza-client-serveur/) | Python, sockets TCP, TLS, SQLite |
 | Bases de données | [Administration Oracle](bases-de-donnees/oracle-administration/) | Oracle SQL, profils, rôles, export |
-| Sécurité | Détection d'intrusion Red Team vs Blue Team | Wazuh, MITRE ATT&CK, _à venir_ |
+| Sécurité | [Détection d'intrusion Red Team vs Blue Team](securite/detection-wazuh-red-vs-blue-team/) | Wazuh, MITRE ATT&CK, Hydra, DVWA |
 
 ## À propos
 
 La plupart de ces projets sont des travaux de groupe. Chaque README indique ma contribution.
 
-Ce sont des projets pédagogiques menés sur des machines virtuelles. Les identifiants qui apparaissent dans les rapports sont des valeurs de démonstration.
+Ce sont des projets pédagogiques menés sur des machines virtuelles. Les rapports rendus ne sont pas publiés ; ils sont disponibles sur demande.
 
 Pour mes labs de sécurité hors cadre scolaire, voir [writeups-cybersecurite](https://github.com/dioufdiarrababacar-adminsys/writeups-cybersecurite).
 

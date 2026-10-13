@@ -18,7 +18,6 @@ Asterisk 20 (chan_pjsip) sur Ubuntu 24.04, MariaDB/MySQL, PHP, Apache, Chart.js,
 
 ## Contenu
 
-- [`rapport.pdf`](rapport.pdf) : architecture, configuration, scripts, base de données, captures
 - [`src/`](src/) : scripts PHP, schéma SQL, extraits `extensions.conf` et `pjsip.conf`
 - [`tests/test-vote.sh`](tests/test-vote.sh) : test du point d'entrée de vote
 
